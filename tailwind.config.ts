@@ -22,6 +22,7 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          glow: "hsl(var(--primary-glow))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -46,6 +47,17 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        data: {
+          temperature: "hsl(var(--data-temperature))",
+          salinity: "hsl(var(--data-salinity))",
+          oxygen: "hsl(var(--data-oxygen))",
+          depth: "hsl(var(--data-depth))",
+        },
+        dashboard: {
+          header: "hsl(var(--dashboard-header))",
+          sidebar: "hsl(var(--dashboard-sidebar))",
+          panel: "hsl(var(--dashboard-panel))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
@@ -80,10 +92,26 @@ export default {
             height: "0",
           },
         },
+        float: {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-10px)" },
+        },
+        wave: {
+          "0%, 100%": { transform: "rotate(0deg)" },
+          "25%": { transform: "rotate(1deg)" },
+          "75%": { transform: "rotate(-1deg)" },
+        },
+        "pulse-ocean": {
+          "0%, 100%": { boxShadow: "0 0 0 0 hsl(210 85% 45% / 0.4)" },
+          "50%": { boxShadow: "0 0 0 20px hsl(210 85% 45% / 0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        float: "float 6s ease-in-out infinite",
+        wave: "wave 4s ease-in-out infinite",
+        "pulse-ocean": "pulse-ocean 2s infinite",
       },
     },
   },

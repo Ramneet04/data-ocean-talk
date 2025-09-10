@@ -28,7 +28,7 @@ interface ChatInterfaceProps {
   selectedFloat: string | null;
 }
 
-// ---- Helper to extract parameters from query ----
+// Helper functions stay the same
 const extractParams = (query: string): string[] => {
   const lower = query.toLowerCase();
   const params: string[] = [];
@@ -38,7 +38,6 @@ const extractParams = (query: string): string[] => {
   return params.length ? params : ["temperature", "salinity", "oxygen"];
 };
 
-// ---- Helper to generate mock data ----
 const generateMockData = (param: string) => {
   if (param === "temperature") {
     return {
@@ -97,18 +96,17 @@ const generateMockData = (param: string) => {
   return null;
 };
 
-// ---- Helper to extract depth from query ----
 const extractDepth = (query: string): number | null => {
   const match = query.match(/(\d{1,4})\s?m/);
   return match ? parseInt(match[1], 10) : null;
 };
 
-export const ChatInterface = ({ onQuery, selectedFloat }: ChatInterfaceProps) => {
+export const ChatInterface = ({ onQuery }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
       content:
-        "Hello! I’m your Indian Ocean ARGO data assistant. Ask me anything about Indian Ocean ARGO float data.\n\nExamples:\n• 'Show temperature at 1000m in the Indian Ocean'\n• 'What is the salinity profile near the equator?'\n• 'Compare oxygen levels at 200m and 500m depth in the India Ocean'\n• 'Plot temperature and salinity for the Bay of Bengal'",
+        "👋 Hello! I’m your Indian Ocean ARGO assistant.\nAsk me about temperature, salinity, oxygen or floats.\n\nExamples:\n• Show temperature at 1000m\n• Salinity near equator\n• Compare oxygen at 200m & 500m\n• Plot temperature for Bay of Bengal",
       sender: "ai",
       timestamp: new Date(),
       type: "text",
@@ -118,54 +116,30 @@ export const ChatInterface = ({ onQuery, selectedFloat }: ChatInterfaceProps) =>
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  // ---- Generate AI-like responses ----
   const getAIResponses = (query: string, params: string[]) => {
-    const lower = query.toLowerCase();
     const responses: Message[] = [];
     const dataForViz: any = {};
     const depth = extractDepth(query);
-
-    // Greetings
-    if (["hi", "hello", "hey"].some((greet) => lower.startsWith(greet))) {
-      responses.push({
-        id: crypto.randomUUID(),
-        sender: "ai",
-        type: "text",
-        content: "Hi there! 👋 What Indian Ocean parameter would you like to explore today?",
-        timestamp: new Date(),
-      });
-      return { responses, dataForViz };
-    }
 
     params.forEach((param) => {
       const mock = generateMockData(param);
       if (!mock) return;
 
-      // Add text summary
-      if (depth !== null) {
-        const valueAtDepth = mock.table.find(
-          (row) => row.Depth.replace("m", "") === String(depth)
-        );
-        responses.push({
-          id: crypto.randomUUID(),
-          sender: "ai",
-          type: "text",
-          content: valueAtDepth
-            ? `In the Indian Ocean at ${depth}m, ${param} is ${Object.values(valueAtDepth)[1]}.`
-            : `No exact match for ${depth}m depth in the Indian Ocean, showing full ${param} profile.`,
-          timestamp: new Date(),
-        });
-      } else {
-        responses.push({
-          id: crypto.randomUUID(),
-          sender: "ai",
-          type: "text",
-          content: `Here is the Indian Ocean ${param} profile you requested:`,
-          timestamp: new Date(),
-        });
-      }
+      responses.push({
+        id: crypto.randomUUID(),
+        sender: "ai",
+        type: "text",
+        content:
+          depth !== null
+            ? `At ${depth}m, ${param} is ${
+                mock.table.find((row) => row.Depth === `${depth}m`)
+                  ? Object.values(mock.table.find((row) => row.Depth === `${depth}m`)!)[1]
+                  : "N/A"
+              }`
+            : `Here’s the ${param} profile for the Indian Ocean:`,
+        timestamp: new Date(),
+      });
 
-      // Add table
       responses.push({
         id: crypto.randomUUID(),
         sender: "ai",
@@ -175,7 +149,6 @@ export const ChatInterface = ({ onQuery, selectedFloat }: ChatInterfaceProps) =>
         timestamp: new Date(),
       });
 
-      // Add chart
       responses.push({
         id: crypto.randomUUID(),
         sender: "ai",
@@ -188,22 +161,10 @@ export const ChatInterface = ({ onQuery, selectedFloat }: ChatInterfaceProps) =>
       dataForViz[param] = mock;
     });
 
-    if (responses.length === 0) {
-      responses.push({
-        id: crypto.randomUUID(),
-        sender: "ai",
-        type: "text",
-        content:
-          "I'm not sure what you mean. Try specifying an Indian Ocean region, time period, depth, or parameter (temperature, salinity, oxygen).",
-        timestamp: new Date(),
-      });
-    }
-
     return { responses, dataForViz };
   };
 
-  // ---- Handle Send ----
-  const handleSendMessage = async () => {
+  const handleSendMessage = () => {
     if (!inputValue.trim()) return;
 
     const userMessage: Message = {
@@ -225,57 +186,39 @@ export const ChatInterface = ({ onQuery, selectedFloat }: ChatInterfaceProps) =>
     setTimeout(() => {
       setMessages((prev) => [...prev, ...responses]);
       setIsLoading(false);
-    }, 1000);
+    }, 800);
   };
 
   return (
-    <div className="flex flex-col h-96">
-      <ScrollArea className="flex-1 p-4 border rounded-lg mb-4">
+    <div className="flex flex-col h-[85vh] max-w-3xl mx-auto bg-background border rounded-lg shadow-sm">
+      {/* Chat area */}
+      <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`flex ${
-                message.sender === "user" ? "justify-end" : "justify-start"
-              }`}
+              className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
             >
-              <div
-                className={`flex space-x-3 max-w-[80%] ${
-                  message.sender === "user" ? "flex-row-reverse space-x-reverse" : ""
-                }`}
-              >
+              <div className={`flex space-x-3 max-w-[75%] ${message.sender === "user" ? "flex-row-reverse space-x-reverse" : ""}`}>
                 <Avatar className="w-8 h-8">
-                  <AvatarFallback
-                    className={
-                      message.sender === "ai"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-accent"
-                    }
-                  >
+                  <AvatarFallback className={message.sender === "ai" ? "bg-primary text-primary-foreground" : "bg-accent"}>
                     {message.sender === "ai" ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
                   </AvatarFallback>
                 </Avatar>
                 <div
-                  className={`rounded-lg p-3 ${
-                    message.sender === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted"
+                  className={`rounded-lg p-3 text-sm leading-relaxed ${
+                    message.sender === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
                   }`}
                 >
-                  {/* Different message types */}
-                  {message.type === "text" && (
-                    <p className="text-sm whitespace-pre-line">{message.content}</p>
-                  )}
+                  {message.type === "text" && <p>{message.content}</p>}
 
                   {message.type === "data" && message.data && (
-                    <div className="overflow-x-auto">
-                      <table className="text-sm border-collapse border w-full">
+                    <div className="overflow-x-auto mt-2">
+                      <table className="text-xs border-collapse border w-full">
                         <thead>
                           <tr>
                             {Object.keys(message.data[0]).map((col) => (
-                              <th key={col} className="px-2 py-1 border-b text-left bg-muted-foreground/10 font-semibold">
-                                {col}
-                              </th>
+                              <th key={col} className="px-2 py-1 border-b bg-muted-foreground/10 font-medium">{col}</th>
                             ))}
                           </tr>
                         </thead>
@@ -283,9 +226,7 @@ export const ChatInterface = ({ onQuery, selectedFloat }: ChatInterfaceProps) =>
                           {message.data.map((row: any, i: number) => (
                             <tr key={i}>
                               {Object.values(row).map((val, j) => (
-                                <td key={j} className="px-2 py-1 border-b whitespace-nowrap">
-                                  {val}
-                                </td>
+                                <td key={j} className="px-2 py-1 border-b">{val}</td>
                               ))}
                             </tr>
                           ))}
@@ -295,7 +236,7 @@ export const ChatInterface = ({ onQuery, selectedFloat }: ChatInterfaceProps) =>
                   )}
 
                   {message.type === "chart" && message.data && (
-                    <div className="h-40 w-full">
+                    <div className="h-40 w-full mt-2">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={message.data}>
                           <XAxis dataKey="depth" />
@@ -305,13 +246,8 @@ export const ChatInterface = ({ onQuery, selectedFloat }: ChatInterfaceProps) =>
                         </LineChart>
                       </ResponsiveContainer>
                       <div className="mt-2 flex justify-end">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => navigate("/data")}
-                        >
-                          
-                          Here's the Data
+                        <Button size="sm" variant="outline" onClick={() => navigate("/data")}>
+                          View Full Data →
                         </Button>
                       </div>
                     </div>
@@ -322,28 +258,20 @@ export const ChatInterface = ({ onQuery, selectedFloat }: ChatInterfaceProps) =>
           ))}
 
           {isLoading && (
-            <div className="flex justify-start">
-              <div className="flex space-x-3 max-w-[80%]">
-                <Avatar className="w-8 h-8">
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    <Bot className="w-4 h-4" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="bg-muted rounded-lg p-3 flex items-center space-x-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-sm">Analyzing data...</span>
-                </div>
-              </div>
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Analyzing data...</span>
             </div>
           )}
         </div>
       </ScrollArea>
 
-      <div className="flex space-x-2">
+      {/* Input area */}
+      <div className="flex space-x-2 p-3 border-t">
         <Input
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          placeholder="Ask about temperature, salinity, oxygen levels, or specific floats..."
+          placeholder="Ask about temperature, salinity, oxygen levels..."
           className="flex-1"
           disabled={isLoading}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}

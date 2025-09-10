@@ -1,9 +1,20 @@
 import { useState } from "react";
-import { Activity, Database, Map, MessageCircle } from "lucide-react";
+import { Activity, Database, Map, MessageCircle, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const DashboardHeader = () => {
   const { toast } = useToast();
@@ -43,23 +54,25 @@ export const DashboardHeader = () => {
   return (
     <>
       {/* Header */}
-      <header className="bg-card border-b border-border px-6 py-4">
-        <div className="flex items-center justify-between">
+      <header className="bg-card border-b border-border px-4 sm:px-6 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Left Section */}
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Activity className="h-8 w-8 text-primary animate-pulse-ocean" />
-              <h1 className="text-2xl font-bold text-foreground">FloatChat</h1>
-            </div>
-            <div className="hidden md:flex items-center space-x-1 text-sm text-muted-foreground">
-              <span>Indian Ocean ARGO Data</span>
-              <span>•</span>
-              <span>PoC v1.0</span>
+          <div className="flex items-center space-x-3">
+            <Activity className="h-7 w-7 sm:h-8 sm:w-8 text-primary animate-pulse-ocean" />
+            <div className="flex flex-col">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">
+                FloatChat
+              </h1>
+              <div className="hidden sm:flex items-center space-x-1 text-xs sm:text-sm text-muted-foreground">
+                <span>Indian Ocean ARGO Data</span>
+                <span>•</span>
+                <span>PoC v1.0</span>
+              </div>
             </div>
           </div>
 
           {/* Right Section */}
-          <div className="flex items-center space-x-2">
+          <div className="hidden sm:flex items-center space-x-2">
             <Button
               variant="ghost"
               size="sm"
@@ -90,43 +103,81 @@ export const DashboardHeader = () => {
               Help
             </Button>
           </div>
+
+          {/* Mobile Menu */}
+          <div className="sm:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setIsStatusOpen(true)}>
+                  <Database className="h-4 w-4 mr-2" /> Data Status
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExport}>
+                  <Map className="h-4 w-4 mr-2" /> Export
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleHelp}>
+                  <MessageCircle className="h-4 w-4 mr-2" /> Help
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </header>
 
       {/* Data Status Modal */}
       <Dialog open={isStatusOpen} onOpenChange={setIsStatusOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-w-xs">
           <DialogHeader>
             <DialogTitle>🌊 ARGO Data Status</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Total Floats</span>
-              <Badge variant="secondary">3 Active</Badge>
+              <span className="text-xs sm:text-sm text-muted-foreground">
+                Total Floats
+              </span>
+              <Badge variant="secondary" className="text-xs sm:text-sm">
+                3 Active
+              </Badge>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Last Updated</span>
-              <span className="text-sm font-medium">
+              <span className="text-xs sm:text-sm text-muted-foreground">
+                Last Updated
+              </span>
+              <span className="text-xs sm:text-sm font-medium">
                 {new Date().toLocaleString()}
               </span>
             </div>
 
             <div className="space-y-2">
-              <span className="text-sm text-muted-foreground">Available Parameters</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">
+                Available Parameters
+              </span>
               <div className="flex flex-wrap gap-2">
-                <Badge className="bg-orange-100 text-orange-700">Temperature</Badge>
-                <Badge className="bg-blue-100 text-blue-700">Salinity</Badge>
-                <Badge className="bg-green-100 text-green-700">Oxygen</Badge>
+                <Badge className="bg-orange-100 text-orange-700 text-xs sm:text-sm">
+                  Temperature
+                </Badge>
+                <Badge className="bg-blue-100 text-blue-700 text-xs sm:text-sm">
+                  Salinity
+                </Badge>
+                <Badge className="bg-green-100 text-green-700 text-xs sm:text-sm">
+                  Oxygen
+                </Badge>
               </div>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Status</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">
+                Status
+              </span>
               <span className="flex items-center space-x-2">
                 <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
-                <span className="text-sm font-medium">Live</span>
+                <span className="text-xs sm:text-sm font-medium">Live</span>
               </span>
             </div>
           </div>

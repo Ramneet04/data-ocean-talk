@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Send, Bot, User, Loader2, FileBarChart, Map, Database } from "lucide-react";
+import { Send, Bot, User, Loader2, FileBarChart, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -12,7 +12,6 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useNavigate } from "react-router-dom";
 
 interface Message {
   id: string;
@@ -38,9 +37,14 @@ const extractParams = (query: string): string[] => {
   return params.length ? params : ["temperature", "salinity", "oxygen"];
 };
 
+const extractDepth = (query: string): number | null => {
+  const match = query.match(/(\d{1,4})\s?m/);
+  return match ? parseInt(match[1], 10) : null;
+};
+
 const generateMockData = (param: string) => {
-  if (param === "temperature") {
-    return {
+  const mockData: Record<string, any> = {
+    temperature: {
       table: [
         { Depth: "0m", Temperature: "28.5°C" },
         { Depth: "50m", Temperature: "22.1°C" },
@@ -61,10 +65,8 @@ const generateMockData = (param: string) => {
         avg: 16.675,
         trend: "decreasing with depth",
       },
-    };
-  }
-  if (param === "salinity") {
-    return {
+    },
+    salinity: {
       table: [
         { Depth: "0m", Salinity: "34.7 PSU" },
         { Depth: "50m", Salinity: "34.9 PSU" },
@@ -85,10 +87,8 @@ const generateMockData = (param: string) => {
         avg: 35.0,
         trend: "slightly increasing with depth",
       },
-    };
-  }
-  if (param === "oxygen") {
-    return {
+    },
+    oxygen: {
       table: [
         { Depth: "0m", Oxygen: "5.1 ml/L" },
         { Depth: "50m", Oxygen: "4.2 ml/L" },
@@ -109,14 +109,9 @@ const generateMockData = (param: string) => {
         avg: 3.57,
         trend: "oxygen minimum zone near 200m",
       },
-    };
-  }
-  return null;
-};
-
-const extractDepth = (query: string): number | null => {
-  const match = query.match(/(\d{1,4})\s?m/);
-  return match ? parseInt(match[1], 10) : null;
+    },
+  };
+  return mockData[param] || null;
 };
 
 export const ChatInterface = ({ handleViewAnalytics, onQuery }: ChatInterfaceProps) => {
@@ -148,11 +143,9 @@ export const ChatInterface = ({ handleViewAnalytics, onQuery }: ChatInterfacePro
         type: "text",
         content:
           depth !== null
-            ? `At ${depth}m, ${param} is ${
-                mock.table.find((row) => row.Depth === `${depth}m`)
-                  ? Object.values(mock.table.find((row) => row.Depth === `${depth}m`)!)[1]
-                  : "N/A"
-              }`
+            ? `At ${depth}m, ${param} is ${mock.table.find((row) => row.Depth === `${depth}m`)
+              ? Object.values(mock.table.find((row) => row.Depth === `${depth}m`)!)[1]
+              : "N/A"}`
             : `Here’s the ${param} profile with key stats: min ${mock.stats.min}, max ${mock.stats.max}, avg ${mock.stats.avg}, trend: ${mock.stats.trend}.`,
         timestamp: new Date(),
       });
@@ -223,28 +216,28 @@ export const ChatInterface = ({ handleViewAnalytics, onQuery }: ChatInterfacePro
   };
 
   return (
-    <div className="flex flex-col h-[85vh] max-w-3xl mx-auto border rounded-lg shadow-lg bg-gradient-to-br from-sky-100 via-blue-50 to-blue-200/80 relative overflow-hidden">
+    <div className="flex flex-col h-[85vh] w-full max-w-4xl mx-auto border rounded-xl shadow-md bg-gradient-to-br from-sky-100 via-blue-50 to-blue-200/80 relative overflow-hidden">
       {/* Chat area */}
-      <ScrollArea className="flex-1 p-4 z-10">
+      <ScrollArea className="flex-1 p-1 sm:p-2 md:p-4 z-10 min-w-0">
         <div className="space-y-4">
           {messages.map((message) => (
             <div key={message.id} className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}>
-              <div className={`flex space-x-3 max-w-[75%] ${message.sender === "user" ? "flex-row-reverse space-x-reverse" : ""}`}>
-                <Avatar className="w-8 h-8">
+              <div className={`flex space-x-1 sm:space-x-2 md:space-x-3 max-w-[98vw] sm:max-w-[90vw] md:max-w-[75%] ${message.sender === "user" ? "flex-row-reverse space-x-reverse" : ""}`}>
+                <Avatar className="w-7 h-7 sm:w-8 sm:h-8">
                   <AvatarFallback className={message.sender === "ai" ? "bg-primary text-primary-foreground" : "bg-accent"}>
                     {message.sender === "ai" ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
                   </AvatarFallback>
                 </Avatar>
-                <div className={`rounded-lg p-3 text-sm leading-relaxed ${message.sender === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                <div className={`rounded-lg p-1 sm:p-2 md:p-3 text-xs sm:text-sm leading-relaxed break-words ${message.sender === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`} style={{wordBreak:'break-word', minWidth:0}}>
                   {message.type === "text" && <p>{message.content}</p>}
 
                   {message.type === "data" && message.data && (
                     <div className="overflow-x-auto mt-2 rounded-md border">
-                      <table className="text-xs border-collapse w-full">
+                      <table className="text-[10px] sm:text-xs border-collapse w-full">
                         <thead className="bg-muted-foreground/10">
                           <tr>
                             {Object.keys(message.data[0]).map((col) => (
-                              <th key={col} className="px-2 py-1 border-b text-left font-medium">{col}</th>
+                              <th key={col} className="px-1 sm:px-2 py-1 border-b text-left font-medium whitespace-nowrap">{col}</th>
                             ))}
                           </tr>
                         </thead>
@@ -252,7 +245,7 @@ export const ChatInterface = ({ handleViewAnalytics, onQuery }: ChatInterfacePro
                           {message.data.map((row: any, i: number) => (
                             <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                               {Object.values(row).map((val, j) => (
-                                <td key={j} className="px-2 py-1 border-b">{val}</td>
+                                <td key={j} className="px-1 sm:px-2 py-1 border-b whitespace-nowrap">{val}</td>
                               ))}
                             </tr>
                           ))}
@@ -265,10 +258,10 @@ export const ChatInterface = ({ handleViewAnalytics, onQuery }: ChatInterfacePro
                     <div className="h-40 w-full mt-2">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={message.data}>
-                          <XAxis dataKey="depth" />
-                          <YAxis />
+                          <XAxis dataKey="depth" fontSize={8} />
+                          <YAxis fontSize={8} />
                           <Tooltip />
-                          <Line type="monotone" dataKey="value" stroke="#2563eb" />
+                          <Line type="monotone" dataKey="value" stroke="#2563eb" strokeWidth={2} />
                         </LineChart>
                       </ResponsiveContainer>
                       <div className="mt-2 flex justify-end">
@@ -278,11 +271,11 @@ export const ChatInterface = ({ handleViewAnalytics, onQuery }: ChatInterfacePro
                       </div>
                     </div>
                   )}
-                  <br />
-                  {message.type === "metadata" && <p className="text-xs text-gray-600 mt-2 italic">{message.content}</p>}
+
+                  {message.type === "metadata" && <p className="text-[10px] sm:text-xs text-gray-600 mt-1 italic">{message.content}</p>}
 
                   {message.type === "download" && (
-                    <Button variant="outline" size="sm" className=" w-full">
+                    <Button variant="outline" size="sm" className="w-full mt-2">
                       <Database className="mr-2 w-4 h-4" /> {message.content}
                     </Button>
                   )}
@@ -292,7 +285,7 @@ export const ChatInterface = ({ handleViewAnalytics, onQuery }: ChatInterfacePro
           ))}
 
           {isLoading && (
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+            <div className="flex items-center space-x-2 text-[10px] sm:text-xs md:text-sm text-muted-foreground">
               <Loader2 className="w-4 h-4 animate-spin" />
               <span>Analyzing data...</span>
             </div>
@@ -301,12 +294,12 @@ export const ChatInterface = ({ handleViewAnalytics, onQuery }: ChatInterfacePro
       </ScrollArea>
 
       {/* Input area */}
-      <div className="flex space-x-2 p-3 border-t bg-white/80 z-10 backdrop-blur-md">
+      <div className="flex space-x-1 sm:space-x-2 p-1 sm:p-2 md:p-3 border-t bg-white/80 z-10 backdrop-blur-md">
         <Input
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           placeholder="Ask about temperature, salinity, oxygen levels..."
-          className="flex-1"
+          className="flex-1 text-[10px] sm:text-xs md:text-sm"
           disabled={isLoading}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
         />

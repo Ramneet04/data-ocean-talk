@@ -1,9 +1,11 @@
 import { BarChart3, Map, MessageSquare, Settings, Waves, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 export const Sidebar = () => {
+  const location = useLocation();
+  const isActive = (path: string) => location.pathname === path;
   return (
     <aside className="w-64 bg-card border-r border-border p-4">
       <div className="space-y-6">
@@ -14,19 +16,19 @@ export const Sidebar = () => {
           </h3>
           <div className="space-y-1">
             <Link to="/">
-              <Button variant="ghost" className="w-full justify-start text-primary bg-primary/10">
+              <Button variant={isActive("/") ? "secondary" : "ghost"} className={`w-full justify-start ${isActive("/") ? "text-primary bg-primary/10" : ""}`}>
                 <Map className="h-4 w-4 mr-3" />
                 Float Explorer
               </Button>
             </Link>
             <Link to="/chat">
-              <Button variant="ghost" className="w-full justify-start">
+              <Button variant={isActive("/chat") ? "secondary" : "ghost"} className={`w-full justify-start ${isActive("/chat") ? "text-primary bg-primary/10" : ""}`}>
                 <MessageSquare className="h-4 w-4 mr-3" />
                 AI Chat
               </Button>
             </Link>
             <Link to="/data">
-              <Button variant="ghost" className="w-full justify-start">
+              <Button variant={isActive("/data") ? "secondary" : "ghost"} className={`w-full justify-start ${isActive("/data") ? "text-primary bg-primary/10" : ""}`}>
                 <BarChart3 className="h-4 w-4 mr-3" />
                 Analytics
               </Button>
@@ -42,14 +44,18 @@ export const Sidebar = () => {
             Data Sources
           </h3>
           <div className="space-y-1">
-            <Button variant="ghost" className="w-full justify-start">
-              <Waves className="h-4 w-4 mr-3" />
-              ARGO Floats
-            </Button>
-            <Button variant="ghost" className="w-full justify-start">
-              <Database className="h-4 w-4 mr-3" />
-              ERDDAP API
-            </Button>
+            <Link to="/argo-floats">
+              <Button variant={isActive("/argo-floats") ? "secondary" : "ghost"} className={`w-full justify-start ${isActive("/argo-floats") ? "text-primary bg-primary/10" : ""}`}>
+                <Waves className="h-4 w-4 mr-3" />
+                ARGO Floats
+              </Button>
+            </Link>
+            <Link to="/erddap-api">
+              <Button variant={isActive("/erddap-api") ? "secondary" : "ghost"} className={`w-full justify-start ${isActive("/erddap-api") ? "text-primary bg-primary/10" : ""}`}>
+                <Database className="h-4 w-4 mr-3" />
+                ERDDAP API
+              </Button>
+            </Link>
           </div>
         </div>
 

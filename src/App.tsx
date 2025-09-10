@@ -9,6 +9,8 @@ import MapPage from "@/pages/MapPage";
 import ChatPage from "@/pages/ChatPage";
 import DataPage from "@/pages/DataPage";
 import NotFound from "@/pages/NotFound";
+import ArgoFloatsPage from "@/pages/ArgoFloatsPage";
+import ErddapApiPage from "@/pages/ErddapApiPage";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +28,8 @@ const App = () => (
               <Route path="/" element={<MapPage />} />
               <Route path="/chat" element={<ChatPage />} />
               <Route path="/data" element={<DataPage />} />
+              <Route path="/argo-floats" element={<ArgoFloatsPage />} />
+              <Route path="/erddap-api" element={<ErddapApiPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>

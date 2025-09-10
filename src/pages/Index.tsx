@@ -8,6 +8,13 @@ import { Sidebar } from '@/components/Sidebar';
 const Index = () => {
   const [selectedFloat, setSelectedFloat] = useState<string | null>(null);
   const [chatQuery, setChatQuery] = useState('');
+  const [vizData, setVizData] = useState<Record<string, {table: any[]; chart: any[]; label: string; color: string}>>({});
+
+  // Handler to synchronize chat and data viz
+  const handleChatQuery = (query: string, params: string[], data: Record<string, {table: any[]; chart: any[]; label: string; color: string}>) => {
+    setChatQuery(query);
+    setVizData(data);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -40,7 +47,7 @@ const Index = () => {
               <h2 className="text-2xl font-semibold mb-4 text-foreground">
                 ARGO Float Locations
               </h2>
-              <FloatMap onFloatSelect={setSelectedFloat} />
+              <FloatMap onFloatSelect={setSelectedFloat} onRegionSelect={() => {}} />
             </div>
 
             {/* Chat Interface */}
@@ -49,7 +56,7 @@ const Index = () => {
                 AI Query Interface
               </h2>
               <ChatInterface 
-                onQuery={setChatQuery}
+                onQuery={handleChatQuery}
                 selectedFloat={selectedFloat}
               />
             </div>
@@ -63,6 +70,7 @@ const Index = () => {
             <DataVisualization 
               selectedFloat={selectedFloat}
               query={chatQuery}
+              vizData={vizData}
             />
           </div>
         </main>

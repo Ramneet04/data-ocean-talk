@@ -12,6 +12,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useNavigate } from "react-router-dom";
 
 interface Message {
   id: string;
@@ -23,7 +24,7 @@ interface Message {
 }
 
 interface ChatInterfaceProps {
-  onQuery: (query: string, params: string[]) => void; // changed
+  onQuery: (query: string, params: string[], data: any) => void;
   selectedFloat: string | null;
 }
 
@@ -37,26 +38,100 @@ const extractParams = (query: string): string[] => {
   return params.length ? params : ["temperature", "salinity", "oxygen"];
 };
 
+// Helper to generate mock data for each parameter
+const generateMockData = (param: string) => {
+  if (param === "temperature") {
+    return {
+      table: [
+        { Depth: "0m", Temperature: "28.5°C" },
+        { Depth: "50m", Temperature: "22.1°C" },
+        { Depth: "200m", Temperature: "12.3°C" },
+        { Depth: "1000m", Temperature: "3.8°C" },
+      ],
+      chart: [
+        { depth: 0, value: 28.5 },
+        { depth: 50, value: 22.1 },
+        { depth: 200, value: 12.3 },
+        { depth: 1000, value: 3.8 },
+      ],
+      label: "Temperature (°C)",
+      color: "#f59e42",
+    };
+  }
+  if (param === "salinity") {
+    return {
+      table: [
+        { Depth: "0m", Salinity: "34.7 PSU" },
+        { Depth: "50m", Salinity: "34.9 PSU" },
+        { Depth: "200m", Salinity: "35.1 PSU" },
+        { Depth: "1000m", Salinity: "35.3 PSU" },
+      ],
+      chart: [
+        { depth: 0, value: 34.7 },
+        { depth: 50, value: 34.9 },
+        { depth: 200, value: 35.1 },
+        { depth: 1000, value: 35.3 },
+      ],
+      label: "Salinity (PSU)",
+      color: "#2563eb",
+    };
+  }
+  if (param === "oxygen") {
+    return {
+      table: [
+        { Depth: "0m", Oxygen: "5.1 ml/L" },
+        { Depth: "50m", Oxygen: "4.2 ml/L" },
+        { Depth: "200m", Oxygen: "2.0 ml/L" },
+        { Depth: "1000m", Oxygen: "3.0 ml/L" },
+      ],
+      chart: [
+        { depth: 0, value: 5.1 },
+        { depth: 50, value: 4.2 },
+        { depth: 200, value: 2.0 },
+        { depth: 1000, value: 3.0 },
+      ],
+      label: "Oxygen (ml/L)",
+      color: "#10b981",
+    };
+  }
+  return null;
+};
+
+// Helper to extract depth from query
+const extractDepth = (query: string): number | null => {
+  const match = query.match(/(\d{2,4})\s?m/);
+  if (match) {
+    return parseInt(match[1], 10);
+  }
+  return null;
+};
+
 export const ChatInterface = ({
   onQuery,
   selectedFloat,
 }: ChatInterfaceProps) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      content:
-        "Hello! I’m your AI oceanography assistant. Ask me anything about ARGO float data. For example:\n\n• 'Show salinity near equator in March 2023'\n• 'Compare oxygen levels at 100m vs 500m depth'\n• 'Plot temperature changes in Arabian Sea'",
-      sender: "ai",
-      timestamp: new Date(),
-      type: "text",
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>(
+    [
+      {
+        id: "1",
+        content:
+          "Hello! I’m your AI oceanography assistant. Ask me anything about ARGO float data. For example:\n\n• 'Show salinity near equator in March 2023'\n• 'Compare oxygen levels at 100m vs 500m depth'\n• 'Plot temperature changes in Arabian Sea'",
+        sender: "ai",
+        timestamp: new Date(),
+        type: "text",
+      },
+    ]
+  );
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   // ---- DEMO AI RESPONSES ----
-  const getAIResponses = (query: string): Message[] => {
+  const getAIResponses = (query: string, params: string[]) => {
     const lower = query.toLowerCase();
+    const responses: Message[] = [];
+    const dataForViz: any = {};
+    const depth = extractDepth(query);
 
     // Handle greetings
     if (
@@ -64,179 +139,77 @@ export const ChatInterface = ({
         lower.trim().startsWith(greet)
       )
     ) {
-      return [
-        {
-          id: Date.now().toString(),
-          sender: "ai",
-          type: "text",
-          content: "Hello! How can I assist you with ARGO float data today?",
-          timestamp: new Date(),
-        },
-      ];
+      responses.push({
+        id: Date.now().toString(),
+        sender: "ai",
+        type: "text",
+        content: "Hello! How can I assist you with ARGO float data today?",
+        timestamp: new Date(),
+      });
+      return { responses, dataForViz };
     }
 
-    if (lower.includes("temperature") && lower.includes("salinity")) {
-      return [
-        {
-          id: Date.now().toString(),
-          sender: "ai",
-          type: "text",
-          content:
-            "I found both temperature and salinity data for your region. Here's a summary:",
-          timestamp: new Date(),
-        },
-        {
-          id: (Date.now() + 1).toString(),
+    params.forEach((param) => {
+      const mock = generateMockData(param);
+      if (mock) {
+        // If a depth is specified, find the value at that depth
+        let valueAtDepth = null;
+        if (depth !== null) {
+          const found = mock.table.find(
+            (row: any) =>
+              row.Depth.replace("m", "").replace(" ", "") === String(depth)
+          );
+          if (found) {
+            valueAtDepth = found[param.charAt(0).toUpperCase() + param.slice(1)];
+          }
+        }
+        if (valueAtDepth) {
+          responses.push({
+            id: Date.now().toString() + param + "_text_depth",
+            sender: "ai",
+            type: "text",
+            content: `The ${param} at ${depth}m in the Indian Ocean is ${valueAtDepth}.`,
+            timestamp: new Date(),
+          });
+        } else {
+          responses.push({
+            id: Date.now().toString() + param + "_text",
+            sender: "ai",
+            type: "text",
+            content: `Here is the ${param} profile:`,
+            timestamp: new Date(),
+          });
+        }
+        responses.push({
+          id: Date.now().toString() + param + "_table",
           sender: "ai",
           type: "data",
-          content: "Combined temperature and salinity data",
-          data: [
-            { Depth: "0m", Temp: "27°C", Salinity: "34.5 PSU" },
-            { Depth: "100m", Temp: "18°C", Salinity: "34.8 PSU" },
-            { Depth: "500m", Temp: "4°C", Salinity: "35.2 PSU" },
-          ],
+          content: `${mock.label} Table`,
+          data: mock.table,
           timestamp: new Date(),
-        },
-        {
-          id: (Date.now() + 2).toString(),
+        });
+        responses.push({
+          id: Date.now().toString() + param + "_chart",
           sender: "ai",
           type: "chart",
-          content: "Temperature and Salinity profile chart",
-          data: [
-            { depth: 0, temp: 27, sal: 34.5 },
-            { depth: 100, temp: 18, sal: 34.8 },
-            { depth: 500, temp: 4, sal: 35.2 },
-          ],
+          content: `${mock.label} Chart`,
+          data: mock.chart,
           timestamp: new Date(),
-        },
-      ];
-    }
+        });
+        dataForViz[param] = mock;
+      }
+    });
 
-    if (lower.includes("salinity")) {
-      return [
-        {
-          id: Date.now().toString(),
-          sender: "ai",
-          type: "text",
-          content:
-            "I found salinity data for your region. Here’s a quick summary:",
-          timestamp: new Date(),
-        },
-        {
-          id: (Date.now() + 1).toString(),
-          sender: "ai",
-          type: "data",
-          content: "Tabular salinity data",
-          data: [
-            { Depth: "0m", Salinity: "34.5 PSU" },
-            { Depth: "100m", Salinity: "34.8 PSU" },
-            { Depth: "500m", Salinity: "35.2 PSU" },
-          ],
-          timestamp: new Date(),
-        },
-        {
-          id: (Date.now() + 2).toString(),
-          sender: "ai",
-          type: "chart",
-          content: "Salinity profile chart",
-          data: [
-            { depth: 0, sal: 34.5 },
-            { depth: 100, sal: 34.8 },
-            { depth: 500, sal: 35.2 },
-          ],
-          timestamp: new Date(),
-        },
-      ];
+    if (responses.length === 0 && /[a-zA-Z]/.test(query)) {
+      responses.push({
+        id: Date.now().toString(),
+        sender: "ai",
+        type: "text",
+        content: `I'm not sure what you mean. Try specifying:\n\n• Geographic region\n• Time period\n• Depth range\n• Parameters of interest`,
+        timestamp: new Date(),
+      });
     }
-
-    if (lower.includes("temperature")) {
-      return [
-        {
-          id: Date.now().toString(),
-          sender: "ai",
-          type: "text",
-          content:
-            "Temperature analysis complete! The ocean shows a clear stratification:",
-          timestamp: new Date(),
-        },
-        {
-          id: (Date.now() + 1).toString(),
-          sender: "ai",
-          type: "data",
-          content: "Temperature table",
-          data: [
-            { Depth: "Surface", Temp: "27°C" },
-            { Depth: "Thermocline (~100m)", Temp: "18°C" },
-            { Depth: "Deep (1000m+)", Temp: "4°C" },
-          ],
-          timestamp: new Date(),
-        },
-        {
-          id: (Date.now() + 2).toString(),
-          sender: "ai",
-          type: "chart",
-          content: "Temperature vs Depth",
-          data: [
-            { depth: 0, temp: 27 },
-            { depth: 100, temp: 18 },
-            { depth: 1000, temp: 4 },
-          ],
-          timestamp: new Date(),
-        },
-      ];
-    }
-
-    if (lower.includes("oxygen")) {
-      return [
-        {
-          id: Date.now().toString(),
-          sender: "ai",
-          type: "text",
-          content: "Oxygen levels indicate a strong oxygen minimum zone:",
-          timestamp: new Date(),
-        },
-        {
-          id: (Date.now() + 1).toString(),
-          sender: "ai",
-          type: "data",
-          content: "Oxygen levels table",
-          data: [
-            { Depth: "Surface", Oxygen: "5.0 ml/L" },
-            { Depth: "500m", Oxygen: "0.3 ml/L" },
-            { Depth: "1000m", Oxygen: "2.5 ml/L" },
-          ],
-          timestamp: new Date(),
-        },
-      ];
-    }
-
-    if (selectedFloat) {
-      return [
-        {
-          id: Date.now().toString(),
-          sender: "ai",
-          type: "text",
-          content: `Based on float ${selectedFloat}, I can provide specific data analysis. Available parameters:\n\n• Temperature profiles\n• Salinity measurements\n• Oxygen concentrations\n• Pressure/depth readings\n• Time series data`,
-          timestamp: new Date(),
-        },
-      ];
-    }
-
-    // Only fallback for actual data queries, not greetings
-    if (/[a-zA-Z]/.test(query)) {
-      return [
-        {
-          id: Date.now().toString(),
-          sender: "ai",
-          type: "text",
-          content: `I'm not sure what you mean. Try specifying:\n\n• Geographic region\n• Time period\n• Depth range\n• Parameters of interest`,
-          timestamp: new Date(),
-        },
-      ];
-    }
-
-    // Otherwise, no response
-    return [];
+    return { responses, dataForViz };
   };
 
   // ---- SENDING ----
@@ -257,14 +230,13 @@ export const ChatInterface = ({
 
     // Extract parameters and pass to onQuery
     const params = extractParams(inputValue);
-    onQuery(inputValue, params);
+    const { responses, dataForViz } = getAIResponses(inputValue, params);
+    onQuery(inputValue, params, dataForViz); // Pass data to parent
 
-    // Simulated AI response
     setTimeout(() => {
-      const aiResponses = getAIResponses(inputValue);
-      setMessages((prev) => [...prev, ...aiResponses]);
+      setMessages((prev) => [...prev, ...responses]);
       setIsLoading(false);
-    }, 1500);
+    }, 1000);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -330,7 +302,7 @@ export const ChatInterface = ({
                             {Object.keys(message.data[0]).map((col) => (
                               <th
                                 key={col}
-                                className="px-2 py-1 border-b text-left"
+                                className="px-2 py-1 border-b text-left bg-muted-foreground/10 font-semibold"
                               >
                                 {col}
                               </th>
@@ -343,7 +315,7 @@ export const ChatInterface = ({
                               {Object.values(row).map((val, j) => (
                                 <td
                                   key={j}
-                                  className="px-2 py-1 border-b whitespace-nowrap"
+                                  className="px-2 py-1 border-b whitespace-nowrap text-foreground"
                                 >
                                   {val}
                                 </td>
@@ -369,6 +341,11 @@ export const ChatInterface = ({
                           />
                         </LineChart>
                       </ResponsiveContainer>
+                      <div className="mt-2 flex justify-end">
+                        <Button size="sm" variant="outline" onClick={() => navigate('/data')}>
+                          View Analytics
+                        </Button>
+                      </div>
                     </div>
                   )}
 

@@ -278,11 +278,11 @@ export const ChatInterface = ({ handleViewAnalytics, onQuery }: ChatInterfacePro
                       </div>
                     </div>
                   )}
-
+                  <br />
                   {message.type === "metadata" && <p className="text-xs text-gray-600 mt-2 italic">{message.content}</p>}
 
                   {message.type === "download" && (
-                    <Button variant="outline" size="sm" className="mt-2 w-full">
+                    <Button variant="outline" size="sm" className=" w-full">
                       <Database className="mr-2 w-4 h-4" /> {message.content}
                     </Button>
                   )}

@@ -1,14 +1,20 @@
-import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { DataVisualization } from "@/components/DataVisualization";
 
 export default function DataPage() {
-  const [selectedFloat, setSelectedFloat] = useState<string | null>(null);
-  const [chatQuery, setChatQuery] = useState("");
+  const { state } = useLocation();
+  const vizData = state?.vizData || {};
+  const chatQuery = state?.chatQuery || "";
 
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-semibold mb-4">Data Analysis</h2>
-      <DataVisualization selectedFloat={selectedFloat} query={chatQuery} />
+      <h2 className="text-2xl font-semibold mb-4">Analytics</h2>
+
+      <DataVisualization
+        selectedFloat={null}
+        query={chatQuery}
+        vizData={vizData}
+      />
     </div>
   );
 }

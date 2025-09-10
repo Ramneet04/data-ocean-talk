@@ -28,7 +28,7 @@ interface ChatInterfaceProps {
   selectedFloat: string | null;
 }
 
-// Helper to extract parameters from query
+// ---- Helper to extract parameters from query ----
 const extractParams = (query: string): string[] => {
   const lower = query.toLowerCase();
   const params: string[] = [];
@@ -38,7 +38,7 @@ const extractParams = (query: string): string[] => {
   return params.length ? params : ["temperature", "salinity", "oxygen"];
 };
 
-// Helper to generate mock data for each parameter
+// ---- Helper to generate mock data ----
 const generateMockData = (param: string) => {
   if (param === "temperature") {
     return {
@@ -97,53 +97,41 @@ const generateMockData = (param: string) => {
   return null;
 };
 
-// Helper to extract depth from query
+// ---- Helper to extract depth from query ----
 const extractDepth = (query: string): number | null => {
-  const match = query.match(/(\d{2,4})\s?m/);
-  if (match) {
-    return parseInt(match[1], 10);
-  }
-  return null;
+  const match = query.match(/(\d{1,4})\s?m/);
+  return match ? parseInt(match[1], 10) : null;
 };
 
-export const ChatInterface = ({
-  onQuery,
-  selectedFloat,
-}: ChatInterfaceProps) => {
-  const [messages, setMessages] = useState<Message[]>(
-    [
-      {
-        id: "1",
-        content:
-          "Hello! I’m your AI oceanography assistant. Ask me anything about ARGO float data. For example:\n\n• 'Show salinity near equator in March 2023'\n• 'Compare oxygen levels at 100m vs 500m depth'\n• 'Plot temperature changes in Arabian Sea'",
-        sender: "ai",
-        timestamp: new Date(),
-        type: "text",
-      },
-    ]
-  );
+export const ChatInterface = ({ onQuery, selectedFloat }: ChatInterfaceProps) => {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: "1",
+      content:
+        "Hello! I’m your Indian Ocean ARGO data assistant. Ask me anything about Indian Ocean ARGO float data.\n\nExamples:\n• 'Show temperature at 1000m in the Indian Ocean'\n• 'What is the salinity profile near the equator?'\n• 'Compare oxygen levels at 200m and 500m depth in the India Ocean'\n• 'Plot temperature and salinity for the Bay of Bengal'",
+      sender: "ai",
+      timestamp: new Date(),
+      type: "text",
+    },
+  ]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  // ---- DEMO AI RESPONSES ----
+  // ---- Generate AI-like responses ----
   const getAIResponses = (query: string, params: string[]) => {
     const lower = query.toLowerCase();
     const responses: Message[] = [];
     const dataForViz: any = {};
     const depth = extractDepth(query);
 
-    // Handle greetings
-    if (
-      ["hi", "hello", "hey", "hola", "greetings"].some((greet) =>
-        lower.trim().startsWith(greet)
-      )
-    ) {
+    // Greetings
+    if (["hi", "hello", "hey"].some((greet) => lower.startsWith(greet))) {
       responses.push({
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         sender: "ai",
         type: "text",
-        content: "Hello! How can I assist you with ARGO float data today?",
+        content: "Hi there! 👋 What Indian Ocean parameter would you like to explore today?",
         timestamp: new Date(),
       });
       return { responses, dataForViz };
@@ -151,73 +139,75 @@ export const ChatInterface = ({
 
     params.forEach((param) => {
       const mock = generateMockData(param);
-      if (mock) {
-        // If a depth is specified, find the value at that depth
-        let valueAtDepth = null;
-        if (depth !== null) {
-          const found = mock.table.find(
-            (row: any) =>
-              row.Depth.replace("m", "").replace(" ", "") === String(depth)
-          );
-          if (found) {
-            valueAtDepth = found[param.charAt(0).toUpperCase() + param.slice(1)];
-          }
-        }
-        if (valueAtDepth) {
-          responses.push({
-            id: Date.now().toString() + param + "_text_depth",
-            sender: "ai",
-            type: "text",
-            content: `The ${param} at ${depth}m in the Indian Ocean is ${valueAtDepth}.`,
-            timestamp: new Date(),
-          });
-        } else {
-          responses.push({
-            id: Date.now().toString() + param + "_text",
-            sender: "ai",
-            type: "text",
-            content: `Here is the ${param} profile:`,
-            timestamp: new Date(),
-          });
-        }
+      if (!mock) return;
+
+      // Add text summary
+      if (depth !== null) {
+        const valueAtDepth = mock.table.find(
+          (row) => row.Depth.replace("m", "") === String(depth)
+        );
         responses.push({
-          id: Date.now().toString() + param + "_table",
+          id: crypto.randomUUID(),
           sender: "ai",
-          type: "data",
-          content: `${mock.label} Table`,
-          data: mock.table,
+          type: "text",
+          content: valueAtDepth
+            ? `In the Indian Ocean at ${depth}m, ${param} is ${Object.values(valueAtDepth)[1]}.`
+            : `No exact match for ${depth}m depth in the Indian Ocean, showing full ${param} profile.`,
           timestamp: new Date(),
         });
+      } else {
         responses.push({
-          id: Date.now().toString() + param + "_chart",
+          id: crypto.randomUUID(),
           sender: "ai",
-          type: "chart",
-          content: `${mock.label} Chart`,
-          data: mock.chart,
+          type: "text",
+          content: `Here is the Indian Ocean ${param} profile you requested:`,
           timestamp: new Date(),
         });
-        dataForViz[param] = mock;
       }
+
+      // Add table
+      responses.push({
+        id: crypto.randomUUID(),
+        sender: "ai",
+        type: "data",
+        content: `${mock.label} Table`,
+        data: mock.table,
+        timestamp: new Date(),
+      });
+
+      // Add chart
+      responses.push({
+        id: crypto.randomUUID(),
+        sender: "ai",
+        type: "chart",
+        content: `${mock.label} Chart`,
+        data: mock.chart,
+        timestamp: new Date(),
+      });
+
+      dataForViz[param] = mock;
     });
 
-    if (responses.length === 0 && /[a-zA-Z]/.test(query)) {
+    if (responses.length === 0) {
       responses.push({
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         sender: "ai",
         type: "text",
-        content: `I'm not sure what you mean. Try specifying:\n\n• Geographic region\n• Time period\n• Depth range\n• Parameters of interest`,
+        content:
+          "I'm not sure what you mean. Try specifying an Indian Ocean region, time period, depth, or parameter (temperature, salinity, oxygen).",
         timestamp: new Date(),
       });
     }
+
     return { responses, dataForViz };
   };
 
-  // ---- SENDING ----
+  // ---- Handle Send ----
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       content: inputValue,
       sender: "user",
       timestamp: new Date(),
@@ -228,10 +218,9 @@ export const ChatInterface = ({
     setInputValue("");
     setIsLoading(true);
 
-    // Extract parameters and pass to onQuery
     const params = extractParams(inputValue);
     const { responses, dataForViz } = getAIResponses(inputValue, params);
-    onQuery(inputValue, params, dataForViz); // Pass data to parent
+    onQuery(inputValue, params, dataForViz);
 
     setTimeout(() => {
       setMessages((prev) => [...prev, ...responses]);
@@ -239,17 +228,9 @@ export const ChatInterface = ({
     }, 1000);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
   return (
     <div className="flex flex-col h-96">
-      {/* Chat Messages */}
-      <ScrollArea className="flex-1 p-4 border border-border rounded-lg mb-4">
+      <ScrollArea className="flex-1 p-4 border rounded-lg mb-4">
         <div className="space-y-4">
           {messages.map((message) => (
             <div
@@ -260,9 +241,7 @@ export const ChatInterface = ({
             >
               <div
                 className={`flex space-x-3 max-w-[80%] ${
-                  message.sender === "user"
-                    ? "flex-row-reverse space-x-reverse"
-                    : ""
+                  message.sender === "user" ? "flex-row-reverse space-x-reverse" : ""
                 }`}
               >
                 <Avatar className="w-8 h-8">
@@ -273,11 +252,7 @@ export const ChatInterface = ({
                         : "bg-accent"
                     }
                   >
-                    {message.sender === "ai" ? (
-                      <Bot className="w-4 h-4" />
-                    ) : (
-                      <User className="w-4 h-4" />
-                    )}
+                    {message.sender === "ai" ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
                   </AvatarFallback>
                 </Avatar>
                 <div
@@ -287,11 +262,9 @@ export const ChatInterface = ({
                       : "bg-muted"
                   }`}
                 >
-                  {/* Render Different Message Types */}
+                  {/* Different message types */}
                   {message.type === "text" && (
-                    <p className="text-sm whitespace-pre-line">
-                      {message.content}
-                    </p>
+                    <p className="text-sm whitespace-pre-line">{message.content}</p>
                   )}
 
                   {message.type === "data" && message.data && (
@@ -300,10 +273,7 @@ export const ChatInterface = ({
                         <thead>
                           <tr>
                             {Object.keys(message.data[0]).map((col) => (
-                              <th
-                                key={col}
-                                className="px-2 py-1 border-b text-left bg-muted-foreground/10 font-semibold"
-                              >
+                              <th key={col} className="px-2 py-1 border-b text-left bg-muted-foreground/10 font-semibold">
                                 {col}
                               </th>
                             ))}
@@ -313,10 +283,7 @@ export const ChatInterface = ({
                           {message.data.map((row: any, i: number) => (
                             <tr key={i}>
                               {Object.values(row).map((val, j) => (
-                                <td
-                                  key={j}
-                                  className="px-2 py-1 border-b whitespace-nowrap text-foreground"
-                                >
+                                <td key={j} className="px-2 py-1 border-b whitespace-nowrap">
                                   {val}
                                 </td>
                               ))}
@@ -334,34 +301,26 @@ export const ChatInterface = ({
                           <XAxis dataKey="depth" />
                           <YAxis />
                           <Tooltip />
-                          <Line
-                            type="monotone"
-                            dataKey={Object.keys(message.data[0])[1]} // auto pick 2nd column
-                            stroke="#2563eb"
-                          />
+                          <Line type="monotone" dataKey="value" stroke="#2563eb" />
                         </LineChart>
                       </ResponsiveContainer>
                       <div className="mt-2 flex justify-end">
-                        <Button size="sm" variant="outline" onClick={() => navigate('/data')}>
-                          View Analytics
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => navigate("/data")}
+                        >
+                          
+                          Here's the Data
                         </Button>
                       </div>
                     </div>
                   )}
-
-                  {message.type === "map" && (
-                    <div className="h-40 w-full bg-gray-200 flex items-center justify-center text-xs">
-                      [Map visualization placeholder]
-                    </div>
-                  )}
-
-                  <p className="text-xs opacity-70 mt-1">
-                    {message.timestamp.toLocaleTimeString()}
-                  </p>
                 </div>
               </div>
             </div>
           ))}
+
           {isLoading && (
             <div className="flex justify-start">
               <div className="flex space-x-3 max-w-[80%]">
@@ -370,11 +329,9 @@ export const ChatInterface = ({
                     <Bot className="w-4 h-4" />
                   </AvatarFallback>
                 </Avatar>
-                <div className="bg-muted rounded-lg p-3">
-                  <div className="flex items-center space-x-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-sm">Analyzing data...</span>
-                  </div>
+                <div className="bg-muted rounded-lg p-3 flex items-center space-x-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm">Analyzing data...</span>
                 </div>
               </div>
             </div>
@@ -382,21 +339,16 @@ export const ChatInterface = ({
         </div>
       </ScrollArea>
 
-      {/* Input Area */}
       <div className="flex space-x-2">
         <Input
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          onKeyPress={handleKeyPress}
           placeholder="Ask about temperature, salinity, oxygen levels, or specific floats..."
           className="flex-1"
           disabled={isLoading}
+          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
         />
-        <Button
-          onClick={handleSendMessage}
-          disabled={!inputValue.trim() || isLoading}
-          size="icon"
-        >
+        <Button onClick={handleSendMessage} disabled={!inputValue.trim() || isLoading} size="icon">
           <Send className="w-4 h-4" />
         </Button>
       </div>

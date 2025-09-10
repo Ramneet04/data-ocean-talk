@@ -20,6 +20,7 @@ interface DataVisualizationProps {
 
 export const DataVisualization = ({ selectedFloat, query, vizData }: DataVisualizationProps) => {
   const [activeTab, setActiveTab] = useState('profiles');
+      console.log("DEBUG: vizData received", vizData);
 
   // Auto-switch tabs based on query content
   useEffect(() => {
@@ -34,6 +35,8 @@ export const DataVisualization = ({ selectedFloat, query, vizData }: DataVisuali
 
   // Helper to render tables for each parameter
   const renderTables = () => {
+    console.log("DEBUG: vizData received", vizData);
+
     return Object.entries(vizData).map(([param, data]) => (
       data.table && Array.isArray(data.table) && data.table.length > 0 && data.table[0] ? (
         <Card key={param + "_table"} className="mb-4">
@@ -69,6 +72,7 @@ export const DataVisualization = ({ selectedFloat, query, vizData }: DataVisuali
 
   // Helper to render charts for each parameter
   const renderCharts = () => {
+    console.log("DEBUG: vizData received", vizData);
     return Object.entries(vizData).map(([param, data]) => (
       data.chart && Array.isArray(data.chart) && data.chart.length > 0 ? (
         <Card key={param} className="mb-4">

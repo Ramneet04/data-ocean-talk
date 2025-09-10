@@ -11,6 +11,8 @@ import DataPage from "@/pages/DataPage";
 import NotFound from "@/pages/NotFound";
 import ArgoFloatsPage from "@/pages/ArgoFloatsPage";
 import ErddapApiPage from "@/pages/ErddapApiPage";
+import HomePage from "@/pages/HomePage";
+import { FloatMap } from "./components/FloatMap";
 
 const queryClient = new QueryClient();
 
@@ -19,13 +21,15 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <Router>
+      {/* ✅ Add future flag to opt-in early to v7 startTransition behavior */}
+      <Router future={{ v7_startTransition: true }}>
         <DashboardHeader />
         <div className="flex">
           <Sidebar />
           <main className="flex-1">
             <Routes>
-              <Route path="/" element={<MapPage />} />
+              <Route path="/" element={<FloatMap />} />
+              <Route path="/map" element={<MapPage />} />
               <Route path="/chat" element={<ChatPage />} />
               <Route path="/data" element={<DataPage />} />
               <Route path="/argo-floats" element={<ArgoFloatsPage />} />

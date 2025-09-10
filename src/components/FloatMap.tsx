@@ -1,7 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MapPin, Waves, Thermometer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { MapContainer, TileLayer, FeatureGroup, Rectangle } from "react-leaflet";
+import { EditControl } from "react-leaflet-draw";
+import "leaflet/dist/leaflet.css";
+import "leaflet-draw/dist/leaflet.draw.css";
 
 interface FloatData {
   id: string;
@@ -15,10 +19,12 @@ interface FloatData {
 
 interface FloatMapProps {
   onFloatSelect: (floatId: string | null) => void;
+  onRegionSelect: (regionBounds: [[number, number], [number, number]]) => void;
 }
 
-export const FloatMap = ({ onFloatSelect }: FloatMapProps) => {
+export const FloatMap = ({ onFloatSelect, onRegionSelect }: FloatMapProps) => {
   const [selectedFloat, setSelectedFloat] = useState<string | null>(null);
+  const drawnRegion = useRef<any>(null);
   
   // Mock ARGO float data for Indian Ocean
   const floatData: FloatData[] = [
@@ -32,6 +38,19 @@ export const FloatMap = ({ onFloatSelect }: FloatMapProps) => {
   const handleFloatClick = (floatId: string) => {
     setSelectedFloat(floatId === selectedFloat ? null : floatId);
     onFloatSelect(floatId === selectedFloat ? null : floatId);
+  };
+
+  const handleCreated = (e: any) => {
+    if (e.layerType === "rectangle" || e.layerType === "polygon") {
+      const bounds = e.layer.getBounds();
+      // For rectangle: bounds is LatLngBounds with getSouthWest/getNorthEast
+      const sw = bounds.getSouthWest();
+      const ne = bounds.getNorthEast();
+      onRegionSelect([
+        [sw.lat, sw.lng],
+        [ne.lat, ne.lng],
+      ]);
+    }
   };
 
   return (
@@ -119,6 +138,39 @@ export const FloatMap = ({ onFloatSelect }: FloatMapProps) => {
           ))}
         </div>
       </div>
+
+      {/* Region Selection Map - Uncomment to use
+      <div className="rounded-lg border">
+        <MapContainer
+          center={[0, 80]}
+          zoom={2}
+          style={{ height: "400px", width: "100%" }}
+          worldCopyJump
+        >
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution="&copy; OpenStreetMap contributors"
+          />
+          <FeatureGroup ref={drawnRegion}>
+            <EditControl
+              position="topright"
+              onCreated={handleCreated}
+              draw={{
+                rectangle: true,
+                polygon: false,
+                circle: false,
+                marker: false,
+                polyline: false,
+                circlemarker: false,
+              }}
+            />
+          </FeatureGroup>
+        </MapContainer>
+        <div className="text-xs mt-2 text-muted-foreground">
+          Draw a rectangle to select an ocean region.
+        </div>
+      </div>
+      */}
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import { BarChart3, Map, MessageSquare, Settings, Waves, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Link } from "react-router-dom";
 
 export const Sidebar = () => {
   return (
@@ -12,18 +13,24 @@ export const Sidebar = () => {
             Navigation
           </h3>
           <div className="space-y-1">
-            <Button variant="ghost" className="w-full justify-start text-primary bg-primary/10">
-              <Map className="h-4 w-4 mr-3" />
-              Float Explorer
-            </Button>
-            <Button variant="ghost" className="w-full justify-start">
-              <MessageSquare className="h-4 w-4 mr-3" />
-              AI Chat
-            </Button>
-            <Button variant="ghost" className="w-full justify-start">
-              <BarChart3 className="h-4 w-4 mr-3" />
-              Analytics
-            </Button>
+            <Link to="/">
+              <Button variant="ghost" className="w-full justify-start text-primary bg-primary/10">
+                <Map className="h-4 w-4 mr-3" />
+                Float Explorer
+              </Button>
+            </Link>
+            <Link to="/chat">
+              <Button variant="ghost" className="w-full justify-start">
+                <MessageSquare className="h-4 w-4 mr-3" />
+                AI Chat
+              </Button>
+            </Link>
+            <Link to="/data">
+              <Button variant="ghost" className="w-full justify-start">
+                <BarChart3 className="h-4 w-4 mr-3" />
+                Analytics
+              </Button>
+            </Link>
           </div>
         </div>
 

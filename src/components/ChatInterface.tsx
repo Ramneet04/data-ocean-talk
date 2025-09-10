@@ -1,88 +1,274 @@
-import { useState } from 'react';
-import { Send, Bot, User, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useState } from "react";
+import { Send, Bot, User, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 interface Message {
   id: string;
-  content: string;
-  sender: 'user' | 'ai';
+  sender: "user" | "ai";
   timestamp: Date;
+  type: "text" | "data" | "chart" | "map";
+  content: string;
+  data?: any;
 }
 
 interface ChatInterfaceProps {
-  onQuery: (query: string) => void;
+  onQuery: (query: string, params: string[]) => void; // changed
   selectedFloat: string | null;
 }
 
-export const ChatInterface = ({ onQuery, selectedFloat }: ChatInterfaceProps) => {
+// Helper to extract parameters from query
+const extractParams = (query: string): string[] => {
+  const lower = query.toLowerCase();
+  const params: string[] = [];
+  if (lower.includes("temperature")) params.push("temperature");
+  if (lower.includes("salinity")) params.push("salinity");
+  if (lower.includes("oxygen")) params.push("oxygen");
+  return params.length ? params : ["temperature", "salinity", "oxygen"];
+};
+
+export const ChatInterface = ({
+  onQuery,
+  selectedFloat,
+}: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: '1',
-      content: 'Hello! I\'m your AI oceanography assistant. Ask me anything about ARGO float data from the Indian Ocean. For example:\n\n• "Show salinity near equator in March 2023"\n• "Compare oxygen levels at 100m vs 500m depth"\n• "Plot temperature changes in Arabian Sea"',
-      sender: 'ai',
+      id: "1",
+      content:
+        "Hello! I’m your AI oceanography assistant. Ask me anything about ARGO float data. For example:\n\n• 'Show salinity near equator in March 2023'\n• 'Compare oxygen levels at 100m vs 500m depth'\n• 'Plot temperature changes in Arabian Sea'",
+      sender: "ai",
       timestamp: new Date(),
+      type: "text",
     },
   ]);
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Sample AI responses for demonstration
-  const getAIResponse = (query: string): string => {
-    const lowerQuery = query.toLowerCase();
-    
-    if (lowerQuery.includes('salinity')) {
-      return `I found salinity data matching your query. The average salinity in the specified region ranges from 34.2 to 35.8 PSU. Here's what the data shows:\n\n• Surface salinity: 34.5-35.2 PSU\n• Deep water salinity: 34.8-35.8 PSU\n• Seasonal variation: ±0.3 PSU\n\nI've updated the visualization below to show this data.`;
+  // ---- DEMO AI RESPONSES ----
+  const getAIResponses = (query: string): Message[] => {
+    const lower = query.toLowerCase();
+
+    // Handle greetings
+    if (
+      ["hi", "hello", "hey", "hola", "greetings"].some((greet) =>
+        lower.trim().startsWith(greet)
+      )
+    ) {
+      return [
+        {
+          id: Date.now().toString(),
+          sender: "ai",
+          type: "text",
+          content: "Hello! How can I assist you with ARGO float data today?",
+          timestamp: new Date(),
+        },
+      ];
     }
-    
-    if (lowerQuery.includes('temperature')) {
-      return `Temperature analysis complete! The data shows:\n\n• Surface temperature: 26-29°C\n• Thermocline depth: 50-150m\n• Deep water temperature: 2-4°C\n\nThe temperature profile indicates typical tropical ocean stratification. Check the charts below for detailed analysis.`;
+
+    if (lower.includes("temperature") && lower.includes("salinity")) {
+      return [
+        {
+          id: Date.now().toString(),
+          sender: "ai",
+          type: "text",
+          content:
+            "I found both temperature and salinity data for your region. Here's a summary:",
+          timestamp: new Date(),
+        },
+        {
+          id: (Date.now() + 1).toString(),
+          sender: "ai",
+          type: "data",
+          content: "Combined temperature and salinity data",
+          data: [
+            { Depth: "0m", Temp: "27°C", Salinity: "34.5 PSU" },
+            { Depth: "100m", Temp: "18°C", Salinity: "34.8 PSU" },
+            { Depth: "500m", Temp: "4°C", Salinity: "35.2 PSU" },
+          ],
+          timestamp: new Date(),
+        },
+        {
+          id: (Date.now() + 2).toString(),
+          sender: "ai",
+          type: "chart",
+          content: "Temperature and Salinity profile chart",
+          data: [
+            { depth: 0, temp: 27, sal: 34.5 },
+            { depth: 100, temp: 18, sal: 34.8 },
+            { depth: 500, temp: 4, sal: 35.2 },
+          ],
+          timestamp: new Date(),
+        },
+      ];
     }
-    
-    if (lowerQuery.includes('oxygen')) {
-      return `Oxygen level analysis:\n\n• Surface oxygen: 4.5-5.2 ml/L\n• Oxygen minimum zone: 200-800m depth\n• Minimum oxygen: 0.1-0.5 ml/L\n\nThis data shows the characteristic oxygen minimum zone of the Indian Ocean. The visualization has been updated to reflect these findings.`;
+
+    if (lower.includes("salinity")) {
+      return [
+        {
+          id: Date.now().toString(),
+          sender: "ai",
+          type: "text",
+          content:
+            "I found salinity data for your region. Here’s a quick summary:",
+          timestamp: new Date(),
+        },
+        {
+          id: (Date.now() + 1).toString(),
+          sender: "ai",
+          type: "data",
+          content: "Tabular salinity data",
+          data: [
+            { Depth: "0m", Salinity: "34.5 PSU" },
+            { Depth: "100m", Salinity: "34.8 PSU" },
+            { Depth: "500m", Salinity: "35.2 PSU" },
+          ],
+          timestamp: new Date(),
+        },
+        {
+          id: (Date.now() + 2).toString(),
+          sender: "ai",
+          type: "chart",
+          content: "Salinity profile chart",
+          data: [
+            { depth: 0, sal: 34.5 },
+            { depth: 100, sal: 34.8 },
+            { depth: 500, sal: 35.2 },
+          ],
+          timestamp: new Date(),
+        },
+      ];
     }
-    
+
+    if (lower.includes("temperature")) {
+      return [
+        {
+          id: Date.now().toString(),
+          sender: "ai",
+          type: "text",
+          content:
+            "Temperature analysis complete! The ocean shows a clear stratification:",
+          timestamp: new Date(),
+        },
+        {
+          id: (Date.now() + 1).toString(),
+          sender: "ai",
+          type: "data",
+          content: "Temperature table",
+          data: [
+            { Depth: "Surface", Temp: "27°C" },
+            { Depth: "Thermocline (~100m)", Temp: "18°C" },
+            { Depth: "Deep (1000m+)", Temp: "4°C" },
+          ],
+          timestamp: new Date(),
+        },
+        {
+          id: (Date.now() + 2).toString(),
+          sender: "ai",
+          type: "chart",
+          content: "Temperature vs Depth",
+          data: [
+            { depth: 0, temp: 27 },
+            { depth: 100, temp: 18 },
+            { depth: 1000, temp: 4 },
+          ],
+          timestamp: new Date(),
+        },
+      ];
+    }
+
+    if (lower.includes("oxygen")) {
+      return [
+        {
+          id: Date.now().toString(),
+          sender: "ai",
+          type: "text",
+          content: "Oxygen levels indicate a strong oxygen minimum zone:",
+          timestamp: new Date(),
+        },
+        {
+          id: (Date.now() + 1).toString(),
+          sender: "ai",
+          type: "data",
+          content: "Oxygen levels table",
+          data: [
+            { Depth: "Surface", Oxygen: "5.0 ml/L" },
+            { Depth: "500m", Oxygen: "0.3 ml/L" },
+            { Depth: "1000m", Oxygen: "2.5 ml/L" },
+          ],
+          timestamp: new Date(),
+        },
+      ];
+    }
+
     if (selectedFloat) {
-      return `Based on float ${selectedFloat}, I can provide specific data analysis. What parameters would you like me to examine? Available data includes:\n\n• Temperature profiles\n• Salinity measurements\n• Oxygen concentrations\n• Pressure/depth readings\n• Time series data`;
+      return [
+        {
+          id: Date.now().toString(),
+          sender: "ai",
+          type: "text",
+          content: `Based on float ${selectedFloat}, I can provide specific data analysis. Available parameters:\n\n• Temperature profiles\n• Salinity measurements\n• Oxygen concentrations\n• Pressure/depth readings\n• Time series data`,
+          timestamp: new Date(),
+        },
+      ];
     }
-    
-    return `I understand you're asking about: "${query}". I can help you analyze ARGO float data including temperature, salinity, oxygen, and pressure measurements. Try being more specific about:\n\n• Geographic region\n• Time period\n• Depth range\n• Parameters of interest`;
+
+    // Only fallback for actual data queries, not greetings
+    if (/[a-zA-Z]/.test(query)) {
+      return [
+        {
+          id: Date.now().toString(),
+          sender: "ai",
+          type: "text",
+          content: `I'm not sure what you mean. Try specifying:\n\n• Geographic region\n• Time period\n• Depth range\n• Parameters of interest`,
+          timestamp: new Date(),
+        },
+      ];
+    }
+
+    // Otherwise, no response
+    return [];
   };
 
+  // ---- SENDING ----
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
-    
+
     const userMessage: Message = {
       id: Date.now().toString(),
       content: inputValue,
-      sender: 'user',
+      sender: "user",
       timestamp: new Date(),
+      type: "text",
     };
-    
-    setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInputValue("");
     setIsLoading(true);
-    onQuery(inputValue);
-    
-    // Simulate AI processing delay
+
+    // Extract parameters and pass to onQuery
+    const params = extractParams(inputValue);
+    onQuery(inputValue, params);
+
+    // Simulated AI response
     setTimeout(() => {
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        content: getAIResponse(inputValue),
-        sender: 'ai',
-        timestamp: new Date(),
-      };
-      
-      setMessages(prev => [...prev, aiResponse]);
+      const aiResponses = getAIResponses(inputValue);
+      setMessages((prev) => [...prev, ...aiResponses]);
       setIsLoading(false);
     }, 1500);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -96,22 +282,102 @@ export const ChatInterface = ({ onQuery, selectedFloat }: ChatInterfaceProps) =>
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex ${
+                message.sender === "user" ? "justify-end" : "justify-start"
+              }`}
             >
-              <div className={`flex space-x-3 max-w-[80%] ${message.sender === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
+              <div
+                className={`flex space-x-3 max-w-[80%] ${
+                  message.sender === "user"
+                    ? "flex-row-reverse space-x-reverse"
+                    : ""
+                }`}
+              >
                 <Avatar className="w-8 h-8">
-                  <AvatarFallback className={message.sender === 'ai' ? 'bg-primary text-primary-foreground' : 'bg-accent'}>
-                    {message.sender === 'ai' ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                  <AvatarFallback
+                    className={
+                      message.sender === "ai"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-accent"
+                    }
+                  >
+                    {message.sender === "ai" ? (
+                      <Bot className="w-4 h-4" />
+                    ) : (
+                      <User className="w-4 h-4" />
+                    )}
                   </AvatarFallback>
                 </Avatar>
                 <div
                   className={`rounded-lg p-3 ${
-                    message.sender === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted'
+                    message.sender === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted"
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-line">{message.content}</p>
+                  {/* Render Different Message Types */}
+                  {message.type === "text" && (
+                    <p className="text-sm whitespace-pre-line">
+                      {message.content}
+                    </p>
+                  )}
+
+                  {message.type === "data" && message.data && (
+                    <div className="overflow-x-auto">
+                      <table className="text-sm border-collapse border w-full">
+                        <thead>
+                          <tr>
+                            {Object.keys(message.data[0]).map((col) => (
+                              <th
+                                key={col}
+                                className="px-2 py-1 border-b text-left"
+                              >
+                                {col}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {message.data.map((row: any, i: number) => (
+                            <tr key={i}>
+                              {Object.values(row).map((val, j) => (
+                                <td
+                                  key={j}
+                                  className="px-2 py-1 border-b whitespace-nowrap"
+                                >
+                                  {val}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {message.type === "chart" && message.data && (
+                    <div className="h-40 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={message.data}>
+                          <XAxis dataKey="depth" />
+                          <YAxis />
+                          <Tooltip />
+                          <Line
+                            type="monotone"
+                            dataKey={Object.keys(message.data[0])[1]} // auto pick 2nd column
+                            stroke="#2563eb"
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+
+                  {message.type === "map" && (
+                    <div className="h-40 w-full bg-gray-200 flex items-center justify-center text-xs">
+                      [Map visualization placeholder]
+                    </div>
+                  )}
+
                   <p className="text-xs opacity-70 mt-1">
                     {message.timestamp.toLocaleTimeString()}
                   </p>
@@ -149,8 +415,8 @@ export const ChatInterface = ({ onQuery, selectedFloat }: ChatInterfaceProps) =>
           className="flex-1"
           disabled={isLoading}
         />
-        <Button 
-          onClick={handleSendMessage} 
+        <Button
+          onClick={handleSendMessage}
           disabled={!inputValue.trim() || isLoading}
           size="icon"
         >

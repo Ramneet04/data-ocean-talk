@@ -125,10 +125,10 @@ export const DataVisualization = ({ selectedFloat, query }: DataVisualizationPro
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={temperatureData}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                    <XAxis dataKey="temperature" domain={[0, 30]} label={{ value: 'Temperature (°C)', position: 'insideBottom', offset: -10 }} />
-                    <YAxis dataKey="depth" reversed domain={[0, 1000]} label={{ value: 'Depth (m)', angle: -90, position: 'insideLeft' }} />
-                    <Tooltip formatter={(value) => [`${value}°C`, 'Temperature']} labelFormatter={(value) => `Depth: ${value}m`} />
-                    <Line type="monotone" dataKey="temperature" stroke="hsl(var(--data-temperature))" strokeWidth={3} dot={{ fill: 'hsl(var(--data-temperature))', strokeWidth: 2, r: 4 }} />
+                    <XAxis dataKey="depth" label={{ value: 'Depth (m)', position: 'insideBottom', offset: -10 }} />
+                    <YAxis yAxisId="left" orientation="left" domain={[0, 30]} label={{ value: 'Temperature (°C)', angle: -90, position: 'insideLeft' }} />
+                    <Tooltip />
+                    <Line yAxisId="left" type="monotone" dataKey="temperature" stroke="hsl(var(--data-temperature))" strokeWidth={3} dot={{ fill: 'hsl(var(--data-temperature))', strokeWidth: 2, r: 4 }} name="Temperature (°C)" />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -137,20 +137,20 @@ export const DataVisualization = ({ selectedFloat, query }: DataVisualizationPro
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <Activity className="h-5 w-5 text-data-oxygen" />
-                  <span>Oxygen vs Depth</span>
+                  <Droplets className="h-5 w-5 text-data-salinity" />
+                  <span>Salinity vs Depth</span>
                 </CardTitle>
-                <CardDescription>Dissolved oxygen profile</CardDescription>
+                <CardDescription>Vertical salinity profile</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={temperatureData}>
+                  <LineChart data={temperatureData}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                    <XAxis dataKey="oxygen" domain={[0, 5]} label={{ value: 'Oxygen (ml/L)', position: 'insideBottom', offset: -10 }} />
-                    <YAxis dataKey="depth" reversed domain={[0, 1000]} label={{ value: 'Depth (m)', angle: -90, position: 'insideLeft' }} />
-                    <Tooltip formatter={(value) => [`${value} ml/L`, 'Oxygen']} labelFormatter={(value) => `Depth: ${value}m`} />
-                    <Area type="monotone" dataKey="oxygen" stroke="hsl(var(--data-oxygen))" fill="hsl(var(--data-oxygen))" fillOpacity={0.3} />
-                  </AreaChart>
+                    <XAxis dataKey="depth" label={{ value: 'Depth (m)', position: 'insideBottom', offset: -10 }} />
+                    <YAxis yAxisId="right" orientation="left" domain={[34, 36]} label={{ value: 'Salinity (PSU)', angle: -90, position: 'insideLeft' }} />
+                    <Tooltip />
+                    <Line yAxisId="right" type="monotone" dataKey="salinity" stroke="hsl(var(--data-salinity))" strokeWidth={3} dot={{ fill: 'hsl(var(--data-salinity))', strokeWidth: 2, r: 4 }} name="Salinity (PSU)" />
+                  </LineChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
@@ -168,8 +168,8 @@ export const DataVisualization = ({ selectedFloat, query }: DataVisualizationPro
                 <LineChart data={timeSeriesData}>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                   <XAxis dataKey="date" />
-                  <YAxis yAxisId="temp" orientation="left" domain={[26, 30]} />
-                  <YAxis yAxisId="sal" orientation="right" domain={[34, 36]} />
+                  <YAxis yAxisId="temp" orientation="left" domain={[26, 30]} label={{ value: 'Temperature (°C)', angle: -90, position: 'insideLeft' }} />
+                  <YAxis yAxisId="sal" orientation="right" domain={[34, 36]} label={{ value: 'Salinity (PSU)', angle: 90, position: 'insideRight' }} />
                   <Tooltip />
                   <Line yAxisId="temp" type="monotone" dataKey="temperature" stroke="hsl(var(--data-temperature))" strokeWidth={2} name="Temperature (°C)" />
                   <Line yAxisId="sal" type="monotone" dataKey="salinity" stroke="hsl(var(--data-salinity))" strokeWidth={2} name="Salinity (PSU)" />
@@ -193,6 +193,7 @@ export const DataVisualization = ({ selectedFloat, query }: DataVisualizationPro
                   <YAxis />
                   <Tooltip />
                   <Bar dataKey="temperature" fill="hsl(var(--data-temperature))" name="Temperature (°C)" />
+                  <Bar dataKey="salinity" fill="hsl(var(--data-salinity))" name="Salinity (PSU)" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>

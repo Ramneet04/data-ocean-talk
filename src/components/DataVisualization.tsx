@@ -8,13 +8,19 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useToast } from "@/components/ui/use-toast";
+
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Thermometer, Droplets, Activity, MapPin, Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Thermometer, Droplets, Activity, MapPin, Calendar, Download } from "lucide-react";
+import JSZip from "jszip";
+// import { saveAs } from "file-saver";
+// import { toast } from "sonner";
 
 interface VizParamData {
   table: { [key: string]: string }[];
@@ -34,8 +40,31 @@ export const DataVisualization = ({
   query,
   vizData,
 }: DataVisualizationProps) => {
-  const [activeTab, setActiveTab] = useState("profiles");
+    const { toast } = useToast();
 
+  const [activeTab, setActiveTab] = useState("profiles");
+  const handleExport = () => {
+    const dummyData = {
+      message: "This is just a dummy export file.",
+      floats: ["Float-1", "Float-2", "Float-3"],
+      timestamp: new Date().toISOString(),
+    };
+
+    const blob = new Blob([JSON.stringify(dummyData, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "argo-floats-export.json";
+    a.click();
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Export Successful",
+      description: "Dummy ARGO float data downloaded as JSON.",
+    });
+  };
   useEffect(() => {
     const q = query.toLowerCase();
     if (q.includes("time") || q.includes("series") || q.includes("change")) {
@@ -43,7 +72,7 @@ export const DataVisualization = ({
     } else if (
       q.includes("region") ||
       q.includes("compare") ||
-      q.includes("Indian") ||
+      q.includes("indian") ||
       q.includes("bay")
     ) {
       setActiveTab("regional");
@@ -54,44 +83,98 @@ export const DataVisualization = ({
 
   const hasData = vizData && Object.keys(vizData).length > 0;
 
-  /** Generate insight text based on data type */
+  // 🔽 Download CSV tables as ZIP
+  const handleDownloadZip = async () => {
+    const zip = new JSZip();
+
+    Object.entries(vizData).forEach(([param, data]) => {
+      if (!data.table?.length) return;
+
+      const headers = Object.keys(data.table[0]);
+      const csvRows = [
+        headers.join(","), // header row
+        ...data.table.map((row) => headers.map((h) => row[h]).join(",")),
+      ];
+      zip.file(`${param}.csv`, csvRows.join("\n"));
+    });
+
+    const blob = await zip.generateAsync({ type: "blob" });
+    saveAs(blob, "ocean_data.zip");
+  };
+
   const renderInsight = (param: string, data: VizParamData) => {
     if (!data.chart?.length) return null;
-
     const values = data.chart.map((d) => d.value);
     const avg = values.reduce((a, b) => a + b, 0) / values.length;
-    const min = Math.min(...values);
     const max = Math.max(...values);
 
-    let message = "";
     if (param === "temperature") {
-      message =
-        avg > 20
-          ? "Surface waters are relatively warm — possible seasonal heating."
-          : "Cooler temperatures suggest upwelling or winter conditions.";
-    } else if (param === "salinity") {
-      message =
-        max > 36
-          ? "High salinity detected — may indicate strong evaporation or restricted circulation."
-          : "Salinity is within expected open-ocean range.";
-    } else if (param === "oxygen") {
-      message =
-        avg < 2
-          ? "⚠️ Low oxygen levels detected — possible oxygen minimum zone."
-          : "Oxygen levels look healthy across most depths.";
+      return (
+        <p className="text-xs italic mt-2 text-amber-600">
+          {avg > 20
+            ? "🌡️ Warm surface water detected — possible seasonal heating."
+            : "❄️ Cooler temperatures suggest upwelling or winter conditions."}
+        </p>
+      );
     }
-
-    return (
-      <div className="text-xs text-muted-foreground mt-2 italic">
-        {message}
-      </div>
-    );
+    if (param === "salinity") {
+      return (
+        <p className="text-xs italic mt-2 text-blue-600">
+          {max > 36
+            ? "💧 High salinity — may indicate strong evaporation or restricted circulation."
+            : "Salinity is within expected range."}
+        </p>
+      );
+    }
+    return null;
   };
+
+  const renderTables = () =>
+    Object.entries(vizData).map(([param, data]) => {
+      if (!data.table?.length) return null;
+      return (
+        <Card
+          key={param + "_table"}
+          className="shadow-sm border hover:shadow-lg bg-white/80 backdrop-blur-md transition-all"
+        >
+          <CardHeader>
+            <CardTitle className="text-md font-semibold">
+              {data.label} Data Table
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto rounded-lg border bg-white">
+              <table className="w-full text-sm border-collapse">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {Object.keys(data.table[0]).map((col) => (
+                      <th key={col} className="px-3 py-2 border-b text-left font-medium">
+                        {col}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.table.map((row, i) => (
+                    <tr key={i} className="hover:bg-gray-100">
+                      {Object.values(row).map((val, j) => (
+                        <td key={j} className="px-3 py-2 border-b">
+                          {val}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    });
 
   const renderCharts = () =>
     Object.entries(vizData).map(([param, data]) => {
       if (!data.chart?.length) return null;
-
       const values = data.chart.map((d) => d.value);
       const avg = values.reduce((a, b) => a + b, 0) / values.length;
       const min = Math.min(...values);
@@ -100,62 +183,38 @@ export const DataVisualization = ({
       return (
         <Card
           key={param}
-          className="shadow-lg border bg-gradient-to-tr from-white to-gray-50 hover:shadow-xl transition-all duration-300"
+          className="shadow-lg border bg-gradient-to-br from-white to-gray-50 hover:shadow-xl transition-all"
         >
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">
-              {data.label} Profile
-            </CardTitle>
+            <CardTitle className="text-lg font-semibold">{data.label} Profile</CardTitle>
             <p className="text-xs text-muted-foreground">
               Depth vs {data.label.toLowerCase()} profile from float{" "}
               {selectedFloat || "N/A"}
             </p>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={280}>
               <LineChart data={data.chart}>
                 <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />
-                <XAxis
-                  dataKey="depth"
-                  label={{
-                    value: "Depth (m)",
-                    position: "insideBottom",
-                    offset: -10,
-                  }}
-                />
-                <YAxis
-                  label={{
-                    value: data.label,
-                    angle: -90,
-                    position: "insideLeft",
-                  }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "white",
-                    borderRadius: "8px",
-                    border: "1px solid #ddd",
-                  }}
-                />
+                <XAxis dataKey="depth" />
+                <YAxis />
+                <Tooltip />
                 <Line
                   type="monotone"
                   dataKey="value"
                   stroke={data.color}
                   strokeWidth={3}
-                  dot={{ fill: data.color, strokeWidth: 2, r: 4 }}
-                  isAnimationActive={true}
+                  dot={{ fill: data.color, r: 4 }}
                 />
               </LineChart>
             </ResponsiveContainer>
 
-            {/* Key Statistics */}
-            <div className="mt-4 text-sm text-gray-600 space-y-1">
+            <div className="mt-4 text-sm space-y-1 text-gray-700">
               <p><strong>Min:</strong> {min.toFixed(2)}</p>
               <p><strong>Max:</strong> {max.toFixed(2)}</p>
               <p><strong>Average:</strong> {avg.toFixed(2)}</p>
             </div>
 
-            {/* Insight */}
             {renderInsight(param, data)}
           </CardContent>
         </Card>
@@ -163,29 +222,40 @@ export const DataVisualization = ({
     });
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 bg-gradient-to-b from-blue-50 via-white to-white p-4 rounded-xl shadow-inner">
       {hasData ? (
         <>
-          {/* Metadata Section */}
-          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-700 bg-gray-50 px-4 py-2 rounded-md">
-            <div className="flex items-center space-x-1">
+          {/* Metadata */}
+          <div className="flex flex-wrap gap-4 items-center text-sm bg-white shadow-sm px-4 py-3 rounded-lg">
+            <div className="flex items-center gap-1">
               <MapPin className="h-4 w-4 text-primary" />
-              <span>Region: Indian Ocean (approx.)</span>
+              <span>Region: Indian Ocean</span>
             </div>
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center gap-1">
               <Calendar className="h-4 w-4 text-primary" />
               <span>Period: Jan 2023 – Aug 2023</span>
             </div>
             {selectedFloat && (
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center gap-1">
                 <Activity className="h-4 w-4 text-primary" />
                 <span>Float ID: {selectedFloat}</span>
               </div>
             )}
           </div>
 
-          {/* Charts & Insights */}
-          <div className="grid lg:grid-cols-2 gap-6">{renderCharts()}</div>
+          {/* Two-column Layout */}
+          <div className="grid lg:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              {renderTables()}
+              {/* Download Button */}
+              <div className="flex justify-end">
+                <Button onClick={handleExport} variant="outline" size="sm">
+                  <Download className="h-4 w-4 mr-2" /> Download Data (ZIP)
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-4">{renderCharts()}</div>
+          </div>
         </>
       ) : (
         <div className="text-center text-muted-foreground py-12 text-lg">

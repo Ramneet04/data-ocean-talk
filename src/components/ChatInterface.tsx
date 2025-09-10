@@ -101,7 +101,7 @@ const extractDepth = (query: string): number | null => {
   return match ? parseInt(match[1], 10) : null;
 };
 
-export const ChatInterface = ({ onQuery }: ChatInterfaceProps) => {
+export const ChatInterface = ({handleViewAnalytics, onQuery }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -190,9 +190,16 @@ export const ChatInterface = ({ onQuery }: ChatInterfaceProps) => {
   };
 
   return (
-    <div className="flex flex-col h-[85vh] max-w-3xl mx-auto bg-background border rounded-lg shadow-sm">
+    <div className="flex flex-col h-[85vh] max-w-3xl mx-auto border rounded-lg shadow-lg bg-gradient-to-br from-sky-100 via-blue-50 to-blue-200/80 relative overflow-hidden">
+      {/* Ocean wave SVG background */}
+      <div className="absolute bottom-0 left-0 w-full h-32 pointer-events-none z-0">
+        <svg viewBox="0 0 1440 320" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+          <path fill="#38bdf8" fillOpacity="0.3" d="M0,160L60,170.7C120,181,240,203,360,197.3C480,192,600,160,720,154.7C840,149,960,171,1080,181.3C1200,192,1320,192,1380,192L1440,192L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z" />
+          <path fill="#0ea5e9" fillOpacity="0.5" d="M0,224L60,197.3C120,171,240,117,360,117.3C480,117,600,171,720,186.7C840,203,960,181,1080,154.7C1200,128,1320,96,1380,80L1440,64L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z" />
+        </svg>
+      </div>
       {/* Chat area */}
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1 p-4 z-10">
         <div className="space-y-4">
           {messages.map((message) => (
             <div
@@ -246,8 +253,8 @@ export const ChatInterface = ({ onQuery }: ChatInterfaceProps) => {
                         </LineChart>
                       </ResponsiveContainer>
                       <div className="mt-2 flex justify-end">
-                        <Button size="sm" variant="outline" onClick={() => navigate("/data")}>
-                          View Full Data →
+                        <Button className=" text-sky-600" size="sm" variant="outline" onClick={() => handleViewAnalytics()}>
+                          View Analytics→
                         </Button>
                       </div>
                     </div>
@@ -265,9 +272,8 @@ export const ChatInterface = ({ onQuery }: ChatInterfaceProps) => {
           )}
         </div>
       </ScrollArea>
-
       {/* Input area */}
-      <div className="flex space-x-2 p-3 border-t">
+      <div className="flex space-x-2 p-3 border-t bg-white/80 z-10 backdrop-blur-md">
         <Input
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
